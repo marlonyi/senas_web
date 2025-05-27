@@ -1,6 +1,6 @@
 # cursos/serializers.py
 from rest_framework import serializers
-from .models import Curso, Modulo, Leccion, Actividad, ProgresoUsuario # <--- ¡ASEGÚRATE DE QUE Modulo ESTÉ AQUÍ!
+from .models import Curso, Modulo, Leccion, Actividad, ProgresoCurso, ProgresoModulo, ProgresoLeccion, ProgresoActividad
 
 # 1. Primero define ActividadSerializer
 class ActividadSerializer(serializers.ModelSerializer):
@@ -17,7 +17,7 @@ class LeccionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 # 3. AÑADE ModuloSerializer (antes de CursoSerializer si Curso anidará Módulos, o aquí)
-class ModuloSerializer(serializers.ModelSerializer): # <--- ¡ESTA ES LA CLASE NUEVA!
+class ModuloSerializer(serializers.ModelSerializer):
     class Meta:
         model = Modulo
         fields = '__all__'
@@ -31,9 +31,28 @@ class CursoSerializer(serializers.ModelSerializer):
         model = Curso
         fields = '__all__'
 
-# ProgresoUsuarioSerializer
-class ProgresoUsuarioSerializer(serializers.ModelSerializer):
+# --- AÑADE ESTOS 4 NUEVOS SERIALIZADORES DE PROGRESO AQUÍ ABAJO ---
+
+class ProgresoCursoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ProgresoUsuario
+        model = ProgresoCurso
         fields = '__all__'
-        read_only_fields = ['fecha_completado']
+        read_only_fields = ('fecha_inicio', 'fecha_completado')
+
+class ProgresoModuloSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProgresoModulo
+        fields = '__all__'
+        read_only_fields = ( 'fecha_inicio', 'fecha_completado')
+
+class ProgresoLeccionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProgresoLeccion
+        fields = '__all__'
+        read_only_fields = ( 'fecha_inicio', 'fecha_completado')
+
+class ProgresoActividadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProgresoActividad
+        fields = '__all__'
+        read_only_fields = ('fecha_inicio', 'fecha_ultimo_intento', 'fecha_completado') # 'usuario' eliminado

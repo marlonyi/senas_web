@@ -42,10 +42,10 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     'usuarios',
-    'cursos',
+    'cursos.apps.CursosConfig',
     'traducciones',
     'comunidad',
-    'gamificacion',
+    'gamificacion.apps.GamificacionConfig',
     'accesibilidad',
     
 ]
@@ -93,12 +93,15 @@ DATABASES = {
         'PORT': '5432',           
     }
 }
+# The `REST_FRAMEWORK` settings in Django are used to configure the behavior of the Django REST
+# framework, which is a powerful and flexible toolkit for building Web APIs in Django. Let's break
+# down the key components of this configuration:
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated', # Por defecto, la mayoría de las vistas requerirán autenticación
+        'rest_framework.permissions.AllowAny', # Por defecto, la mayoría de las vistas requerirán autenticación
         # 'rest_framework.permissions.AllowAny', # Si quieres que las vistas sean públicas por defecto
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination', # <-- ¡AÑADE ESTA LÍNEA!

@@ -1,16 +1,19 @@
 # cursos/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CursoViewSet, LeccionViewSet, ActividadViewSet, ProgresoUsuarioViewSet, ModuloViewSet # Asegúrate de importar ModuloViewSet
+# --- Importar los nuevos ViewSets de progreso ---
+from .views import CursoViewSet, ModuloViewSet, LeccionViewSet, ActividadViewSet, ProgresoCursoViewSet, ProgresoModuloViewSet, ProgresoLeccionViewSet, ProgresoActividadViewSet
 
 router = DefaultRouter()
 router.register(r'cursos', CursoViewSet)
-router.register(r'modulos', ModuloViewSet) # <--- ¡Añade esta línea!
+router.register(r'modulos', ModuloViewSet)
 router.register(r'lecciones', LeccionViewSet)
 router.register(r'actividades', ActividadViewSet)
-router.register(r'progreso-usuario', ProgresoUsuarioViewSet)
-
-
+# --- Registrar los nuevos ViewSets de progreso ---
+router.register(r'progreso-cursos', ProgresoCursoViewSet)
+router.register(r'progreso-modulos', ProgresoModuloViewSet)
+router.register(r'progreso-lecciones', ProgresoLeccionViewSet)
+router.register(r'progreso-actividades', ProgresoActividadViewSet)
 
 
 urlpatterns = [
