@@ -1,25 +1,22 @@
-# cursos/views.py
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, permissions, status, filters
-# --- Importar los nuevos modelos de progreso ---
+from rest_framework import serializers # Importado explícitamente para serializers.ValidationError
+
 from .models import Curso, Modulo, Leccion, Actividad, ProgresoCurso, ProgresoModulo, ProgresoLeccion, ProgresoActividad
-# --- Importar los nuevos serializadores de progreso ---
 from .serializers import CursoSerializer, ModuloSerializer, LeccionSerializer, ActividadSerializer, ProgresoCursoSerializer, ProgresoModuloSerializer, ProgresoLeccionSerializer, ProgresoActividadSerializer
 from rest_framework.decorators import action
-from django.utils import timezone
-import datetime
-from django.db import IntegrityError 
+from django.utils import timezone # Asegúrate de que esta importación esté presente
+import datetime # Si lo usas en alguna otra parte, de lo contrario se puede remover
+from django.db import IntegrityError # Si lo usas en alguna otra parte, de lo contrario se puede remover
 
-# ... (Tus CursoViewSet, ModuloViewSet, LeccionViewSet (excepto el action), ActividadViewSet (excepto el action)) ...
 
-class CursoViewSet(viewsets.ModelViewSet): # <--- Asegúrate de que esta clase exista y esté correctamente definida.
+class CursoViewSet(viewsets.ModelViewSet):
     queryset = Curso.objects.all()
     serializer_class = CursoSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     search_fields = ['nombre', 'descripcion', 'nivel']
     
-
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             self.permission_classes = [permissions.IsAdminUser]
@@ -28,7 +25,7 @@ class CursoViewSet(viewsets.ModelViewSet): # <--- Asegúrate de que esta clase e
         return super().get_permissions()
 
 
-class ModuloViewSet(viewsets.ModelViewSet): # <--- Asegúrate de que esta clase exista y esté correctamente definida.
+class ModuloViewSet(viewsets.ModelViewSet):
     queryset = Modulo.objects.all()
     serializer_class = ModuloSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
@@ -41,6 +38,7 @@ class ModuloViewSet(viewsets.ModelViewSet): # <--- Asegúrate de que esta clase 
         else:
             self.permission_classes = [permissions.IsAuthenticated]
         return super().get_permissions()
+
 
 class LeccionViewSet(viewsets.ModelViewSet):
     queryset = Leccion.objects.all()
@@ -123,14 +121,20 @@ class ActividadViewSet(viewsets.ModelViewSet):
 
         # --- LÓGICA DE CALIFICACIÓN SEGÚN TIPO DE ACTIVIDAD ---
         if actividad.tipo_actividad == 'pregunta_respuesta':
-            if actividad.respuesta_correcta and str(respuesta_enviada).lower() == str(actividad.respuesta_correcta).lower():
-                puntuacion_obtenida = actividad.puntos
-                completado = True
+            if actividad.respuesta_correcta and respuesta_enviada is not None:
+                # Normalizar ambas respuestas para comparación
+                respuesta_correcta_norm = str(actividad.respuesta_correcta).strip().lower()
+                respuesta_enviada_norm = str(respuesta_enviada).strip().lower()
+                if respuesta_enviada_norm == respuesta_correcta_norm:
+                    puntuacion_obtenida = actividad.puntos
+                    completado = True
 
         elif actividad.tipo_actividad == 'seleccion_multiple':
             try:
-                respuesta_usuario_idx = int(respuesta_enviada) 
-                respuesta_correcta_idx = int(actividad.respuesta_correcta) 
+                # Asegurarse de que respuesta_enviada sea una cadena antes de int()
+                # y normalizar para evitar errores de espacios en blanco
+                respuesta_usuario_idx = int(str(respuesta_enviada).strip())
+                respuesta_correcta_idx = int(str(actividad.respuesta_correcta).strip())
 
                 if actividad.opciones and \
                    0 <= respuesta_usuario_idx < len(actividad.opciones) and \
@@ -138,19 +142,25 @@ class ActividadViewSet(viewsets.ModelViewSet):
                     puntuacion_obtenida = actividad.puntos
                     completado = True
             except (ValueError, TypeError):
+                # Si la respuesta enviada no es un entero válido, simplemente no se califica
                 pass
 
         elif actividad.tipo_actividad == 'completar_espacios':
             if actividad.respuesta_correcta and respuesta_enviada:
+                # Normalizar palabras requeridas
                 required_words = [word.strip().lower() for word in actividad.respuesta_correcta.split(',') if word.strip()]
-                user_response_lower = str(respuesta_enviada).lower()
+                # Normalizar respuesta del usuario
+                user_response_norm = str(respuesta_enviada).strip().lower()
 
-                if all(word in user_response_lower for word in required_words):
+                # Verificar si todas las palabras requeridas están en la respuesta del usuario
+                if all(word in user_response_norm for word in required_words):
                     puntuacion_obtenida = actividad.puntos
                     completado = True
 
         progreso_actividad.puntuacion = puntuacion_obtenida
         progreso_actividad.completado = completado
+        
+        # Solo actualiza fecha_completado si se marcó como completado y no tenía fecha_completado antes
         if completado and not progreso_actividad.fecha_completado:
             progreso_actividad.fecha_completado = timezone.now()
 
@@ -160,7 +170,7 @@ class ActividadViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# --- NUEVOS VIEWSETS DE PROGRESO ---
+# --- VIEWSETS DE PROGRESO ---
 
 class ProgresoCursoViewSet(viewsets.ModelViewSet):
     queryset = ProgresoCurso.objects.all()
@@ -189,6 +199,7 @@ class ProgresoCursoViewSet(viewsets.ModelViewSet):
             raise permissions.PermissionDenied("No tienes permiso para actualizar el progreso de otro usuario.")
         serializer.save()
 
+
 class ProgresoModuloViewSet(viewsets.ModelViewSet):
     queryset = ProgresoModulo.objects.all()
     serializer_class = ProgresoModuloSerializer
@@ -213,6 +224,8 @@ class ProgresoModuloViewSet(viewsets.ModelViewSet):
         if not self.request.user.is_staff and serializer.instance.usuario != self.request.user:
             raise permissions.PermissionDenied("No tienes permiso para actualizar el progreso de otro usuario.")
         serializer.save()
+
+
 class ProgresoLeccionViewSet(viewsets.ModelViewSet):
     queryset = ProgresoLeccion.objects.all()
     serializer_class = ProgresoLeccionSerializer
@@ -238,10 +251,11 @@ class ProgresoLeccionViewSet(viewsets.ModelViewSet):
             raise permissions.PermissionDenied("No tienes permiso para actualizar el progreso de otro usuario.")
         serializer.save()
 
+
 class ProgresoActividadViewSet(viewsets.ModelViewSet):
     queryset = ProgresoActividad.objects.all()
     serializer_class = ProgresoActividadSerializer
-    #permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         if self.request.user.is_staff:
@@ -249,23 +263,38 @@ class ProgresoActividadViewSet(viewsets.ModelViewSet):
         return ProgresoActividad.objects.filter(usuario=self.request.user).order_by('-fecha_inicio')
 
     def perform_create(self, serializer):
-        # Lógica para crear el progreso:
-        # Si el usuario no es staff, el usuario se asigna automáticamente al usuario autenticado.
+        actividad_id = self.request.data.get('actividad')
+        if not actividad_id:
+             raise serializers.ValidationError({"actividad": "Este campo es requerido."})
+
+        # La corrección para el FieldError:
+        if ProgresoActividad.objects.filter(usuario=self.request.user, actividad_id=actividad_id).exists():
+            raise serializers.ValidationError({"non_field_errors": ["Ya tienes progreso para esta actividad."]})
+
         if not self.request.user.is_staff:
             serializer.save(usuario=self.request.user)
         else:
-            # Si es staff, puede crear progreso para cualquier usuario si se especifica 'usuario' en el body.
-            # Si no se especifica 'usuario', se usa el usuario staff autenticado.
             usuario_id = self.request.data.get('usuario')
             if usuario_id:
-                serializer.save(usuario_id=usuario_id) # Usar usuario_id para evitar cargar el objeto completo
+                serializer.save(usuario_id=usuario_id)
             else:
                 serializer.save(usuario=self.request.user)
 
-
     def perform_update(self, serializer):
-        # Lógica para actualizar el progreso:
-        # Un usuario normal solo puede actualizar su propio progreso.
+        original_completado = serializer.instance.completado
+        
+        serializer.save() # Guarda los campos que vienen en la petición
+
+        # Lógica para actualizar fecha_completado si la actividad se marca como completada
+        # y no lo estaba antes, y no tenía fecha de completado.
+        if not original_completado and serializer.instance.completado and not serializer.instance.fecha_completado:
+            serializer.instance.fecha_completado = timezone.now()
+            serializer.instance.save(update_fields=['fecha_completado'])
+
         if not self.request.user.is_staff and serializer.instance.usuario != self.request.user:
             raise permissions.PermissionDenied("No tienes permiso para actualizar el progreso de otro usuario.")
-        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_staff and instance.usuario != self.request.user:
+            raise permissions.PermissionDenied("No tienes permiso para eliminar el progreso de otro usuario.")
+        instance.delete()

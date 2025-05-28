@@ -11,9 +11,9 @@ from rest_framework_simplejwt.views import (
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
-    path('admin/', admin.site.urls), # <--- ¡DESCOMENTA ESTA LÍNEA!
+    path('admin/', admin.site.urls), 
     path('api/usuarios/', include('usuarios.urls')),
-    path('api/', include('cursos.urls')),
+    path('api/cursos/', include('cursos.urls')),
     path('api/traducciones/', include('traducciones.urls')),
     path('api/comunidad/', include('comunidad.urls')),
     path('api/gamificacion/', include('gamificacion.urls')),

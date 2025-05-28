@@ -1,5 +1,6 @@
 # cursos/serializers.py
 from rest_framework import serializers
+from rest_framework.fields import CurrentUserDefault
 from .models import Curso, Modulo, Leccion, Actividad, ProgresoCurso, ProgresoModulo, ProgresoLeccion, ProgresoActividad
 
 # 1. Primero define ActividadSerializer
@@ -52,7 +53,16 @@ class ProgresoLeccionSerializer(serializers.ModelSerializer):
         read_only_fields = ( 'fecha_inicio', 'fecha_completado')
 
 class ProgresoActividadSerializer(serializers.ModelSerializer):
+    # El usuario será asignado automáticamente por la vista/serializer
+    usuario = serializers.HiddenField(default=CurrentUserDefault())
+
+    # 'actividad' DEBE ser writable (no read_only) para que puedas pasarlo en el POST
+    # Usamos PrimaryKeyRelatedField para esperar el ID de la actividad
+    actividad = serializers.PrimaryKeyRelatedField(queryset=Actividad.objects.all())
+
     class Meta:
         model = ProgresoActividad
+        # Incluye todos los campos que deseas exponer, incluyendo 'usuario' y 'actividad'
         fields = '__all__'
-        read_only_fields = ('fecha_inicio', 'fecha_ultimo_intento', 'fecha_completado') # 'usuario' eliminado
+        # Si tienes un UniqueTogetherValidator en tu modelo para (usuario, actividad),
+        # este serializador lo respetará.
