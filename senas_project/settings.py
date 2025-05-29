@@ -206,3 +206,43 @@ STATIC_ROOT = BASE_DIR / 'staticfiles' # Esto creará una carpeta 'staticfiles' 
 STATICFILES_DIRS = [
     # BASE_DIR / 'static_dev', # Ejemplo: si tuvieras una carpeta 'static_dev' global para tu proyecto
 ]
+
+
+# Configuración de Logging para ver los mensajes de depuración en la consola
+# Asegúrate de añadir esto si no tienes ya una sección LOGGING
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False, # No deshabilitar los loggers existentes
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO', # Nivel por defecto para todos los loggers si no se especifica. Aquí queremos INFO.
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO', # Nivel para mensajes internos de Django (como peticiones HTTP)
+            'propagate': False, # No pasar a loggers padres
+        },
+        'gamificacion': { # Logger específico para tu aplicación 'gamificacion'
+            'handlers': ['console'],
+            'level': 'DEBUG', # ¡Este es el importante! Queremos ver los mensajes DEBUG de 'gamificacion'
+            'propagate': False,
+        },
+    }
+}

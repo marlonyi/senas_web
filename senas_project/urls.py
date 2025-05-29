@@ -1,12 +1,10 @@
-# senas_project/urls.py
-
 from django.urls import path, include
-from django.contrib import admin # Asegúrate de que esta importación esté presente
+from django.contrib import admin
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
     TokenVerifyView, # Opcional: para verificar un token
-)   
+) 
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
@@ -16,7 +14,7 @@ urlpatterns = [
     path('api/cursos/', include('cursos.urls')),
     path('api/traducciones/', include('traducciones.urls')),
     path('api/comunidad/', include('comunidad.urls')),
-    path('api/gamificacion/', include('gamificacion.urls')),
+    path('api/gamificacion/', include('gamificacion.urls')), # ¡Esta línea es CRUCIAL!
 
     # Rutas de autenticación JWT
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -27,5 +25,4 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-
 ]

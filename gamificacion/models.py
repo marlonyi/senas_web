@@ -1,12 +1,15 @@
 # gamificacion/models.py
 from django.db import models
 from django.contrib.auth.models import User
+from rest_framework import serializers
 from django.utils import timezone # Para fechas con zona horaria
 
 class PuntosUsuario(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='puntos_gamificacion')
     puntos = models.IntegerField(default=0)
     fecha_ultima_actualizacion = models.DateTimeField(auto_now=True)
+    # --- NUEVO CAMPO ---
+    nivel_actual = models.ForeignKey('Nivel', on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios_en_nivel')
 
     class Meta:
         verbose_name = "Puntos de Usuario"
@@ -43,14 +46,25 @@ class InsigniaUsuario(models.Model):
     def __str__(self):
         return f"{self.usuario.username} obtuvo '{self.insignia.nombre}'"
 
-# Puedes agregar un modelo de Nivel más adelante si lo deseas
-# class Nivel(models.Model):
-#     nombre = models.CharField(max_length=50)
-#     puntos_minimos = models.IntegerField(unique=True)
-#     descripcion = models.TextField(blank=True, null=True)
-#
-#     class Meta:
-#         ordering = ['puntos_minimos']
-#
-#     def __str__(self):
-#         return f"Nivel {self.nombre} ({self.puntos_minimos}+ puntos)"
+class Nivel(models.Model):
+    nombre = models.CharField(max_length=50, unique=True) # Nombre único del nivel (ej. "Novato", "Veterano")
+    puntos_minimos = models.IntegerField(unique=True, help_text="Puntos requeridos para alcanzar este nivel")
+    descripcion = models.TextField(blank=True, null=True)
+    # Podrías añadir una imagen para el nivel también:
+    # imagen = models.ImageField(upload_to='niveles/', blank=True, null=True)
+
+    class Meta:
+        ordering = ['puntos_minimos'] # Los niveles se ordenan por los puntos requeridos
+        verbose_name = "Nivel"
+        verbose_name_plural = "Niveles"
+
+    def __str__(self):
+        return f"Nivel {self.nombre} ({self.puntos_minimos}+ puntos)"
+
+class LeaderboardUserSerializer(serializers.ModelSerializer):
+    # Esto accederá al related_name 'puntos_gamificacion' de PuntosUsuario
+    puntos_totales = serializers.IntegerField(source='puntos_gamificacion.puntos', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'puntos_totales']
