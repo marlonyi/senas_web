@@ -57,5 +57,4 @@ class DailyRewardMiddleware:
             print("Usuario NO autenticado. No se procesa el middleware de puntos diarios.")
 
         print("--- FIN DailyRewardMiddleware ---")
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
