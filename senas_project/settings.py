@@ -212,37 +212,43 @@ STATICFILES_DIRS = [
 # Asegúrate de añadir esto si no tienes ya una sección LOGGING
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False, # No deshabilitar los loggers existentes
+    'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+            'style': '{',  # <--- ¡AÑADE ESTO!
         },
         'simple': {
             'format': '{levelname} {message}',
-            'style': '{',
+            'style': '{',  # <--- ¡AÑADE ESTO!
         },
     },
     'handlers': {
         'console': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+            'formatter': 'simple'
         },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO', # Nivel por defecto para todos los loggers si no se especifica. Aquí queremos INFO.
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO', # Nivel para mensajes internos de Django (como peticiones HTTP)
-            'propagate': False, # No pasar a loggers padres
-        },
-        'gamificacion': { # Logger específico para tu aplicación 'gamificacion'
-            'handlers': ['console'],
-            'level': 'DEBUG', # ¡Este es el importante! Queremos ver los mensajes DEBUG de 'gamificacion'
+            'level': 'INFO',
             'propagate': False,
         },
-    }
+        'gamificacion': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'cursos': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
 }
