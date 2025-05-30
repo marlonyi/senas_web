@@ -6,9 +6,9 @@ from django.contrib.auth.models import User
 
 class Curso(models.Model):
     id_curso = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=255)
+    nombre = models.CharField(max_length=255) # <-- ¡Aquí está! El campo se llama 'nombre', no 'titulo'.
     descripcion = models.TextField()
-    nivel = models.CharField(max_length=50) # Ej: Básico, Intermedio, Avanzado
+    nivel = models.CharField(max_length=50)
     imagen_url = models.URLField(max_length=500, blank=True, null=True)
     activo = models.BooleanField(default=True)
 
@@ -18,7 +18,7 @@ class Curso(models.Model):
 class Modulo(models.Model):
     id_modulo = models.AutoField(primary_key=True)
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='modulos')
-    nombre = models.CharField(max_length=255)
+    nombre = models.CharField(max_length=255) # <-- ¡Aquí está! El campo se llama 'nombre'.
     descripcion = models.TextField()
     orden = models.IntegerField(default=1)
 
@@ -32,12 +32,11 @@ class Modulo(models.Model):
 class Leccion(models.Model):
     id_leccion = models.AutoField(primary_key=True)
     modulo = models.ForeignKey(Modulo, on_delete=models.CASCADE, related_name='lecciones')
-    titulo = models.CharField(max_length=255)
+    titulo = models.CharField(max_length=255) # <-- ¡Aquí está! El campo se llama 'titulo'.
     contenido_texto = models.TextField(blank=True, null=True)
     url_video = models.URLField(max_length=500, blank=True, null=True)
     url_imagen = models.URLField(max_length=500, blank=True, null=True)
     orden = models.IntegerField(default=1)
-
     class Meta:
         ordering = ['orden']
         unique_together = ('modulo', 'orden')
@@ -76,7 +75,7 @@ class ProgresoCurso(models.Model):
     completado = models.BooleanField(default=False)
     fecha_inicio = models.DateTimeField(auto_now_add=True)
     fecha_completado = models.DateTimeField(blank=True, null=True)
-    # Podrías añadir un campo para el progreso total del curso (ej. porcentaje)
+    puntos_otorgados = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('usuario', 'curso') # Un solo registro por usuario/curso
@@ -91,6 +90,7 @@ class ProgresoModulo(models.Model):
     completado = models.BooleanField(default=False)
     fecha_inicio = models.DateTimeField(auto_now_add=True)
     fecha_completado = models.DateTimeField(blank=True, null=True)
+    puntos_otorgados = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('usuario', 'modulo') # Un solo registro por usuario/modulo
@@ -105,6 +105,7 @@ class ProgresoLeccion(models.Model):
     completado = models.BooleanField(default=False)
     fecha_inicio = models.DateTimeField(auto_now_add=True)
     fecha_completado = models.DateTimeField(blank=True, null=True)
+    puntos_otorgados = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('usuario', 'leccion') # Un solo registro por usuario/lección
@@ -122,6 +123,7 @@ class ProgresoActividad(models.Model):
     fecha_inicio = models.DateTimeField(auto_now_add=True)
     fecha_ultimo_intento = models.DateTimeField(auto_now=True) # Actualiza cada vez que se guarda
     fecha_completado = models.DateTimeField(blank=True, null=True) # Cuando se obtuvo la puntuación correcta
+    puntos_otorgados = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('usuario', 'actividad') # Un solo registro por usuario/actividad
