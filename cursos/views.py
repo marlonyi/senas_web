@@ -93,13 +93,13 @@ class LeccionViewSet(viewsets.ModelViewSet):
             }
         )
 
-        if not created and not progreso_leccion.completado:
+        if not created:
+            if progreso_leccion.completado:
+                return Response({'detail': 'Lección ya marcada como completada.'}, status=status.HTTP_200_OK)
+
             progreso_leccion.completado = True
             progreso_leccion.fecha_completado = timezone.now()
             progreso_leccion.save()
-        elif not created and progreso_leccion.completado:
-            return Response({'detail': 'Lección ya marcada como completada.'}, status=status.HTTP_200_OK)
-
         serializer = ProgresoLeccionSerializer(progreso_leccion)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -120,6 +120,7 @@ class ActividadViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def enviar_actividad(self, request, pk=None):
+        # sourcery skip: use-contextlib-suppress
         actividad = self.get_object()
         usuario = request.user
         respuesta_enviada = request.data.get('respuesta')
@@ -210,12 +211,10 @@ class ProgresoCursoViewSet(viewsets.ModelViewSet):
         # Asigna el usuario autenticado automáticamente al crear
         if not self.request.user.is_staff:
             serializer.save(usuario=self.request.user)
-        else: # Si es staff, puede crear progreso para cualquier usuario si se especifica
-            usuario_id = self.request.data.get('usuario')
-            if usuario_id:
-                serializer.save(usuario_id=usuario_id)
-            else:
-                serializer.save(usuario=self.request.user) # O usa el autenticado si no se especificó otro
+        elif usuario_id := self.request.data.get('usuario'):
+            serializer.save(usuario_id=usuario_id)
+        else:
+            serializer.save(usuario=self.request.user)
 
     def perform_update(self, serializer):
         # Asigna el usuario autenticado automáticamente al actualizar (si no es staff)
@@ -237,12 +236,10 @@ class ProgresoModuloViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         if not self.request.user.is_staff:
             serializer.save(usuario=self.request.user)
+        elif (usuario_id := self.request.data.get('usuario')):
+            serializer.save(usuario_id=usuario_id)
         else:
-            usuario_id = self.request.data.get('usuario')
-            if usuario_id:
-                serializer.save(usuario_id=usuario_id)
-            else:
-                serializer.save(usuario=self.request.user)
+            serializer.save(usuario=self.request.user)
 
     def perform_update(self, serializer):
         if not self.request.user.is_staff and serializer.instance.usuario != self.request.user:
@@ -263,12 +260,10 @@ class ProgresoLeccionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         if not self.request.user.is_staff:
             serializer.save(usuario=self.request.user)
+        elif usuario_id := self.request.data.get('usuario'):
+            serializer.save(usuario_id=usuario_id)
         else:
-            usuario_id = self.request.data.get('usuario')
-            if usuario_id:
-                serializer.save(usuario_id=usuario_id)
-            else:
-                serializer.save(usuario=self.request.user)
+            serializer.save(usuario=self.request.user)
 
     def perform_update(self, serializer):
         if not self.request.user.is_staff and serializer.instance.usuario != self.request.user:
@@ -289,7 +284,7 @@ class ProgresoActividadViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         actividad_id = self.request.data.get('actividad')
         if not actividad_id:
-             raise serializers.ValidationError({"actividad": "Este campo es requerido."})
+            raise serializers.ValidationError({"actividad": "Este campo es requerido."})
 
         # La corrección para el FieldError:
         if ProgresoActividad.objects.filter(usuario=self.request.user, actividad_id=actividad_id).exists():
@@ -297,12 +292,10 @@ class ProgresoActividadViewSet(viewsets.ModelViewSet):
 
         if not self.request.user.is_staff:
             serializer.save(usuario=self.request.user)
+        elif usuario_id := self.request.data.get('usuario'):
+            serializer.save(usuario_id=usuario_id)
         else:
-            usuario_id = self.request.data.get('usuario')
-            if usuario_id:
-                serializer.save(usuario_id=usuario_id)
-            else:
-                serializer.save(usuario=self.request.user)
+            serializer.save(usuario=self.request.user)
 
     def perform_update(self, serializer):
         original_completado = serializer.instance.completado
