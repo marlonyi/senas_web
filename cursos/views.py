@@ -1,21 +1,45 @@
+# cursos/views.py
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework import serializers # Importado explícitamente para serializers.ValidationError
 
-from .models import Curso, Modulo, Leccion, Actividad, ProgresoCurso, ProgresoModulo, ProgresoLeccion, ProgresoActividad
-from .serializers import CursoSerializer, ModuloSerializer, LeccionSerializer, ActividadSerializer, ProgresoCursoSerializer, ProgresoModuloSerializer, ProgresoLeccionSerializer, ProgresoActividadSerializer
+# Importa CategoriaCurso aquí
+from .models import Curso, Modulo, Leccion, Actividad, ProgresoCurso, ProgresoModulo, ProgresoLeccion, ProgresoActividad, CategoriaCurso
+# Importa CategoriaCursoSerializer
+from .serializers import CursoSerializer, ModuloSerializer, LeccionSerializer, ActividadSerializer, \
+    ProgresoCursoSerializer, ProgresoModuloSerializer, ProgresoLeccionSerializer, ProgresoActividadSerializer, \
+    CategoriaCursoSerializer # <--- ¡IMPORTANTE: Importa CategoriaCursoSerializer aquí!
+
 from rest_framework.decorators import action
-from django.utils import timezone # Asegúrate de que esta importación esté presente
-import datetime # Si lo usas en alguna otra parte, de lo contrario se puede remover
-from django.db import IntegrityError # Si lo usas en alguna otra parte, de lo contrario se puede remover
+from django.utils import timezone 
+import datetime 
+from django.db import IntegrityError 
+
+
+# --- NUEVO: ViewSet para CategoriaCurso ---
+class CategoriaCursoViewSet(viewsets.ModelViewSet):
+    queryset = CategoriaCurso.objects.all().order_by('nombre')
+    serializer_class = CategoriaCursoSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] # Permite lectura a todos, escritura solo a autenticados
+    # Si quieres que solo los administradores puedan crear/editar categorías:
+    # def get_permissions(self):
+    #     if self.action in ['create', 'update', 'partial_update', 'destroy']:
+    #         self.permission_classes = [permissions.IsAdminUser]
+    #     else:
+    #         self.permission_classes = [permissions.AllowAny] # O IsAuthenticated
+    #     return super().get_permissions()
 
 
 class CursoViewSet(viewsets.ModelViewSet):
-    queryset = Curso.objects.all()
+    # Modificamos el queryset para que el filtro por categorías sea más eficiente
+    queryset = Curso.objects.all().prefetch_related('categorias')
     serializer_class = CursoSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     search_fields = ['nombre', 'descripcion', 'nivel']
+    
+    # Añadimos 'categorias' a los campos de filtro
+    filterset_fields = ['nivel', 'activo', 'categorias'] # Filtra por ID de categoría
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
