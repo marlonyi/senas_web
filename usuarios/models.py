@@ -1,30 +1,73 @@
 # usuarios/models.py
 from django.db import models
-from django.contrib.auth.models import User # Importamos el modelo de usuario por defecto de Django
+from django.contrib.auth.models import User
 
 class PerfilUsuario(models.Model):
-    # Relación uno a uno con el modelo de usuario de Django
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE)
-    # Puedes añadir campos adicionales aquí si los necesitas para el perfil del usuario
-    # Por ejemplo:
-    # fecha_nacimiento = models.DateField(null=True, blank=True)
-    # pais = models.CharField(max_length=100, blank=True)
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='mi_perfil')
 
-    # Un campo para llevar la cuenta de los puntos de gamificación (opcional aquí, también puede ir en gamificacion)
-    puntos_experiencia = models.IntegerField(default=0)
+    # Campos esenciales / muy recomendados para el perfil (los que ya tenías)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    avatar = models.ImageField(upload_to='avatares/', blank=True, null=True)
+    biografia = models.TextField(blank=True, null=True)
+
+    # Campos adicionales sugeridos ahora
+    genero = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        choices=[
+            ('masculino', 'Masculino'),
+            ('femenino', 'Femenino'),
+            ('otro', 'Otro'),
+            ('no_decir', 'Prefiero no decir')
+        ]
+    )
+    pais = models.CharField(max_length=100, blank=True, null=True)
+    ciudad = models.CharField(max_length=100, blank=True, null=True)
+    idioma_preferido = models.CharField(
+        max_length=7,
+        default='es-co', # O el idioma por defecto que consideres
+        choices=[
+            ('es-co', 'Español (Colombia)'),
+            ('en', 'English'),
+            ('es', 'Español (General)'), # Si planeas soportar español genérico también
+            # Añade más idiomas si los necesitas
+        ]
+    )
+    nivel_educativo = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        choices=[
+            ('primaria', 'Primaria'),
+            ('secundaria', 'Secundaria'),
+            ('tecnico', 'Técnico'),
+            ('universitario', 'Universitario'),
+            ('posgrado', 'Posgrado'),
+            ('otro', 'Otro')
+        ]
+    )
+    ocupacion = models.CharField(max_length=100, blank=True, null=True) # O TextField si quieres más detalle
 
     def __str__(self):
         return self.usuario.username
 
-# La tabla 'accesibilidad' en tu BD podría ser un modelo aparte o campos en PerfilUsuario
-# Si 'accesibilidad' se refiere a preferencias del usuario (ej. tamaño de fuente preferido),
-# podría ir aquí. Si es sobre el contenido (ej. transcripciones), irá en la app 'accesibilidad'.
-# Por ahora, asumamos que son preferencias de usuario.
+# El modelo PreferenciasAccesibilidad ya lo tienes y está bien
+# Solo asegúrate de que los campos 'tamano_fuente' y 'contraste_alto' estén definidos allí.
 class PreferenciasAccesibilidad(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
     transcripciones_activas = models.BooleanField(default=True)
-    # Otros campos como 'tamano_fuente', 'contraste_alto', etc.
-    # tamano_fuente = models.CharField(max_length=50, default='mediano')
+    tamano_fuente = models.CharField(
+        max_length=50,
+        default='mediano',
+        choices=[
+            ('pequeño', 'Pequeño'),
+            ('mediano', 'Mediano'),
+            ('grande', 'Grande'),
+        ]
+    )
+    contraste_alto = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Preferencias de {self.usuario.username}"
