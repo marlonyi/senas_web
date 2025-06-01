@@ -1,17 +1,24 @@
 # cursos/models.py
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.text import slugify # ¡IMPORTANTE: Asegúrate de que esta línea esté aquí!
 
-
-# ... (Tus modelos Curso, Modulo, Leccion, Actividad permanecen sin cambios) ...
 
 class Curso(models.Model):
     id_curso = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=255) # <-- ¡Aquí está! El campo se llama 'nombre', no 'titulo'.
+    nombre = models.CharField(max_length=255)
     descripcion = models.TextField()
     nivel = models.CharField(max_length=50)
     imagen_url = models.URLField(max_length=500, blank=True, null=True)
     activo = models.BooleanField(default=True)
+    
+    # --- NUEVO CAMPO: Categorías ---
+    categorias = models.ManyToManyField(
+        'CategoriaCurso', # Referencia al modelo CategoriaCurso
+        related_name='cursos',
+        blank=True,
+        help_text="Categorías a las que pertenece este curso."
+    )
 
     def __str__(self):
         return self.nombre
@@ -19,7 +26,7 @@ class Curso(models.Model):
 class Modulo(models.Model):
     id_modulo = models.AutoField(primary_key=True)
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name='modulos')
-    nombre = models.CharField(max_length=255) # <-- ¡Aquí está! El campo se llama 'nombre'.
+    nombre = models.CharField(max_length=255)
     descripcion = models.TextField()
     orden = models.IntegerField(default=1)
 
@@ -33,7 +40,7 @@ class Modulo(models.Model):
 class Leccion(models.Model):
     id_leccion = models.AutoField(primary_key=True)
     modulo = models.ForeignKey(Modulo, on_delete=models.CASCADE, related_name='lecciones')
-    titulo = models.CharField(max_length=255) # <-- ¡Aquí está! El campo se llama 'titulo'.
+    titulo = models.CharField(max_length=255)
     contenido_texto = models.TextField(blank=True, null=True)
     url_video = models.URLField(max_length=500, blank=True, null=True)
     url_imagen = models.URLField(max_length=500, blank=True, null=True)
@@ -67,7 +74,7 @@ class Actividad(models.Model):
     def __str__(self):
         return f"Actividad {self.id_actividad} - {self.get_tipo_actividad_display()} de {self.leccion.titulo}"
 
-# --- NUEVOS MODELOS DE PROGRESO ---
+# --- MODELOS DE PROGRESO ---
 
 class ProgresoCurso(models.Model):
     id_progreso_curso = models.AutoField(primary_key=True)
@@ -131,3 +138,24 @@ class ProgresoActividad(models.Model):
 
     def __str__(self):
         return f"Progreso de {self.usuario.username} en Actividad: {self.actividad.pregunta[:20]}... - Puntos: {self.puntuacion}"
+
+# --- NUEVO MODELO CategoriaCurso (Añadido al final de tus modelos existentes) ---
+class CategoriaCurso(models.Model):
+    id_categoria = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100, unique=True, help_text="Nombre de la categoría (ej. 'Lenguaje de Señas Básico')")
+    descripcion = models.TextField(blank=True, null=True, help_text="Descripción de la categoría.")
+    slug = models.SlugField(max_length=100, unique=True, help_text="Identificador amigable para URLs (se genera automáticamente).")
+
+    class Meta:
+        verbose_name = "Categoría de Curso"
+        verbose_name_plural = "Categorías de Cursos"
+        ordering = ['nombre']
+
+    def save(self, *args, **kwargs):
+        # Generar el slug automáticamente si no se ha proporcionado o si el nombre cambia
+        if not self.slug or (self.pk and not self.slug):
+            self.slug = slugify(self.nombre)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nombre
