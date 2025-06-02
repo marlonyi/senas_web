@@ -40,20 +40,21 @@ class PerfilUsuarioDetailSerializer(serializers.ModelSerializer):
             'ocupacion',
         )
         read_only_fields = ('avatar',)
-
-
-# RegisterSerializer (sin cambios, ya funciona)
+        
+        
+        
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'}, validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
-
-    perfil = PerfilUsuarioDetailSerializer(required=False)
-    preferencias_accesibilidad = PreferenciasAccesibilidadDetailSerializer(required=False)
-
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True)
+    
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password2', 'first_name', 'last_name', 'perfil', 'preferencias_accesibilidad')
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ('username', 'password', 'password2', 'email', 'first_name', 'last_name')
+        extra_kwargs = {
+            'email': {'required': True},
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+        }
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -61,40 +62,31 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        perfil_data = validated_data.pop('perfil', {})
-        preferencias_data = validated_data.pop('preferencias_accesibilidad', {})
-        validated_data.pop('password2')
-
-        user = User.objects.create_user(
+        user = User.objects.create(
             username=validated_data['username'],
             email=validated_data['email'],
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', '')
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name']
         )
         user.set_password(validated_data['password'])
         user.save()
 
-        PerfilUsuario.objects.create(usuario=user, **perfil_data)
-        PreferenciasAccesibilidad.objects.create(usuario=user, **preferencias_data)
-
+        # Crear PerfilUsuario y PreferenciasAccesibilidad por defecto
+        PerfilUsuario.objects.create(usuario=user)
+        PreferenciasAccesibilidad.objects.create(usuario=user) # Asegúrate de que tu modelo PreferenciasAccesibilidad pueda crearse sin más datos
+        
         return user
 
-
-# Serializador para ver y editar el perfil del usuario autenticado (MiPerfilView)
 class MiPerfilSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='usuario.username', read_only=True)
     email = serializers.EmailField(source='usuario.email', required=False)
     first_name = serializers.CharField(source='usuario.first_name', required=False)
     last_name = serializers.CharField(source='usuario.last_name', required=False)
 
-    # El nombre del campo anidado en el serializador es 'preferencias_accesibilidad'.
-    # El 'source' indica de dónde viene el dato para la serialización de salida.
-    # required=False permite que no se envíe en la entrada.
-    # read_only=False (por defecto) o no especificarlo, permite que los datos se pasen al update.
-    # Si lo pones en read_only=True, NO podrás actualizarlo a través de este serializador.
     preferencias_accesibilidad = PreferenciasAccesibilidadDetailSerializer(
         source='usuario.preferencias_accesibilidad',
-        required=False
+        required=False,
+        allow_null=True
     )
 
     class Meta:
@@ -111,45 +103,55 @@ class MiPerfilSerializer(serializers.ModelSerializer):
             'idioma_preferido',
             'nivel_educativo',
             'ocupacion',
-            'preferencias_accesibilidad' # Asegúrate de que esté aquí para la salida
+            'preferencias_accesibilidad'
         )
-        read_only_fields = ('avatar',) # El avatar lo gestionaremos con una vista de actualización de imagen separada
+        read_only_fields = ('avatar', 'username')
 
     def update(self, instance, validated_data):
-        # 1. Extraer los datos que corresponden a los modelos relacionados (User y PreferenciasAccesibilidad)
         user = instance.usuario
 
-        # Extraer los campos del User. Pop los elimina de validated_data.
-        email_data = validated_data.pop('email', None)
-        first_name_data = validated_data.pop('first_name', None)
-        last_name_data = validated_data.pop('last_name', None)
+        # 1. Actualizar campos del modelo User
+        # Extraemos los datos del usuario.
+        user_data_for_update = {}
+        if 'email' in validated_data:
+            user_data_for_update['email'] = validated_data.pop('email')
+        if 'first_name' in validated_data:
+            user_data_for_update['first_name'] = validated_data.pop('first_name')
+        if 'last_name' in validated_data:
+            user_data_for_update['last_name'] = validated_data.pop('last_name')
 
-        # Extraer los datos de las preferencias de accesibilidad. Pop los elimina de validated_data.
-        # La clave es 'preferencias_accesibilidad' porque así es como se define el campo en este serializador.
-        preferencias_data = validated_data.pop('preferencias_accesibilidad', None)
+        if user_data_for_update:
+            for attr, value in user_data_for_update.items():
+                setattr(user, attr, value)
+            user.save()
 
-        # 2. Actualizar campos del modelo User
-        if email_data is not None:
-            user.email = email_data
-        if first_name_data is not None:
-            user.first_name = first_name_data
-        if last_name_data is not None:
-            user.last_name = last_name_data
-        user.save()
+        # 2. Actualizar PreferenciasAccesibilidad (delegando al serializador anidado)
+        if 'preferencias_accesibilidad' in validated_data:
+            preferencias_data = validated_data.pop('preferencias_accesibilidad')
+            
+            preferencias_obj = getattr(user, 'preferencias_accesibilidad', None)
 
-        # 3. Actualizar o crear PreferenciasAccesibilidad
-        if preferencias_data is not None:
-            PreferenciasAccesibilidad.objects.update_or_create(
-                usuario=user,
-                defaults=preferencias_data
-            )
+            if preferencias_obj:
+                # Actualizar la instancia existente de PreferenciasAccesibilidad
+                # Usamos el serializador anidado para manejar la validación y actualización.
+                # self.fields['preferencias_accesibilidad'] es la instancia del serializador anidado.
+                # validated_data es el diccionario de datos para ese sub-serializador.
+                self.fields['preferencias_accesibilidad'].update(preferencias_obj, preferencias_data)
+            else:
+                # Si no existe, la creamos. Esto es un fallback, ya que debería existir.
+                PreferenciasAccesibilidad.objects.create(usuario=user, **preferencias_data)
 
-        # 4. Actualizar los campos directos del modelo PerfilUsuario
-        # Después de los .pop(), 'validated_data' solo debería contener campos directos de PerfilUsuario.
-        # Para ser aún más seguro, filtramos explícitamente por los nombres de los campos de PerfilUsuario.
-        # Esto previene errores si alguna clave inesperada quedara en validated_data.
-        perfil_fields = [f.name for f in PerfilUsuario._meta.get_fields() if f.concrete and not f.is_relation]
-        perfil_data_to_update = {k: v for k, v in validated_data.items() if k in perfil_fields}
+        # 3. Actualizar los campos DIRECTOS del modelo PerfilUsuario
+        # Excluimos explícitamente el campo 'usuario' de PerfilUsuario, ya que es una relación y se maneja por separado.
+        # Creamos un diccionario con solo los campos que pertenecen directamente al PerfilUsuario.
+        perfil_direct_fields = [
+            'fecha_nacimiento', 'telefono', 'biografia', 'genero',
+            'pais', 'ciudad', 'idioma_preferido', 'nivel_educativo', 'ocupacion'
+        ]
+        
+        perfil_data_to_update = {
+            k: v for k, v in validated_data.items() if k in perfil_direct_fields
+        }
 
         for attr, value in perfil_data_to_update.items():
             setattr(instance, attr, value)

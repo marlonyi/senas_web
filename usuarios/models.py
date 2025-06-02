@@ -56,7 +56,7 @@ class PerfilUsuario(models.Model):
 # El modelo PreferenciasAccesibilidad ya lo tienes y está bien
 # Solo asegúrate de que los campos 'tamano_fuente' y 'contraste_alto' estén definidos allí.
 class PreferenciasAccesibilidad(models.Model):
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE)
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferencias_accesibilidad')
     transcripciones_activas = models.BooleanField(default=True)
     tamano_fuente = models.CharField(
         max_length=50,

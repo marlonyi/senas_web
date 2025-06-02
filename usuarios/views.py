@@ -108,11 +108,9 @@ class MiPerfilView(generics.RetrieveUpdateAPIView):
         # Cargar el PerfilUsuario y sus relaciones para la serialización
         # Usamos 'usuario' para PerfilUsuario->User (select_related)
         # Y 'usuario__preferenciasaccesibilidad' para PerfilUsuario->User->PreferenciasAccesibilidad (prefetch_related)
-        # El nombre 'preferenciasaccesibilidad' es el related_name por defecto si no definiste uno
+        # El nombre 'preferencias_accesibilidad' es el related_name por defecto si no definiste uno
         # en PreferenciasAccesibilidad.usuario. Si definiste un related_name, úsalo aquí.
-        obj = PerfilUsuario.objects.select_related('usuario').prefetch_related('usuario__preferenciasaccesibilidad').get(usuario=user)
-        
-        return obj
+        return PerfilUsuario.objects.select_related('usuario').prefetch_related('usuario__preferencias_accesibilidad').get(usuario=user)
 
     def perform_update(self, serializer):
         serializer.save()

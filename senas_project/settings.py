@@ -207,6 +207,18 @@ STATICFILES_DIRS = [
     # BASE_DIR / 'static_dev', # Ejemplo: si tuvieras una carpeta 'static_dev' global para tu proyecto
 ]
 
+# ... (alrededor de la sección de STATIC_FILES, o al final del archivo)
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración para archivos subidos por el usuario (MEDIA)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media' # Esto creará una carpeta 'media' en la raíz de tu proyecto
+
+
 
 # Configuración de Logging para ver los mensajes de depuración en la consola
 # Asegúrate de añadir esto si no tienes ya una sección LOGGING
