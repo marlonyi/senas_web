@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser # Para manejar subida de archivos
 from rest_framework.views import APIView # Para vistas personalizadas de API
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 from django.contrib.auth.models import User
 from rest_framework import permissions # <--- ASEGÚRATE DE QUE ESTA LÍNEA ESTÉ PRESENTE
@@ -17,6 +19,7 @@ from .serializers import (
     RegisterSerializer,
     MiPerfilSerializer, # Nuevo serializador
     AvatarUpdateSerializer # Nuevo serializador
+    
 )
 
 # IMPORTACIONES ADICIONALES NECESARIAS PARA ChangePasswordView
@@ -71,24 +74,22 @@ class PreferenciasAccesibilidadViewSet(viewsets.ModelViewSet):
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
+    permission_classes = (permissions.AllowAny,) # El registro debe ser accesible sin autenticación
     serializer_class = RegisterSerializer
-    permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
+        # Ya no necesitas crear PerfilUsuario y PreferenciasAccesibilidad aquí,
+        # porque RegisterSerializer.create() ya lo hace.
+
         return Response({
-            "message": "Usuario registrado exitosamente.",
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-            }
+            "user": UserSerializer(user, context=self.get_serializer_context()).data,
+            "message": "Usuario registrado exitosamente. Se ha creado un perfil y preferencias de accesibilidad por defecto."
         }, status=status.HTTP_201_CREATED)
+
 
 
 # Vistas para la gestión del perfil del usuario autenticado
@@ -164,3 +165,19 @@ class ChangePasswordView(APIView):
         user.save()
 
         return Response({"message": "Contraseña actualizada exitosamente."}, status=status.HTTP_200_OK)
+    
+    
+class LogoutView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            refresh_token = request.data["refresh_token"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except KeyError:
+            return Response({'detail': 'Refresh token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    

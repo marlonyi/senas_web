@@ -45,13 +45,13 @@ class PerfilUsuarioDetailSerializer(serializers.ModelSerializer):
         
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    password2 = serializers.CharField(write_only=True, required=True)
-    
+    password2 = serializers.CharField(write_only=True, required=True) # Para confirmar la contraseña
+
     class Meta:
         model = User
         fields = ('username', 'password', 'password2', 'email', 'first_name', 'last_name')
         extra_kwargs = {
-            'email': {'required': True},
+            'email': {'required': True}, # Asegurar que el email es requerido
             'first_name': {'required': True},
             'last_name': {'required': True},
         }
@@ -62,6 +62,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        # Eliminar password2 ya que no es un campo del modelo User
+        validated_data.pop('password2') 
+
         user = User.objects.create(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -74,7 +77,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Crear PerfilUsuario y PreferenciasAccesibilidad por defecto
         PerfilUsuario.objects.create(usuario=user)
         PreferenciasAccesibilidad.objects.create(usuario=user) # Asegúrate de que tu modelo PreferenciasAccesibilidad pueda crearse sin más datos
-        
+
         return user
 
 class MiPerfilSerializer(serializers.ModelSerializer):

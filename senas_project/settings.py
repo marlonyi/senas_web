@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'drf_spectacular',
     'usuarios',
@@ -102,10 +103,9 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny', # Por defecto, la mayoría de las vistas requerirán autenticación
-        # 'rest_framework.permissions.AllowAny', # Si quieres que las vistas sean públicas por defecto
+        'rest_framework.permissions.IsAuthenticated', # <--- Cambia a IsAuthenticated
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination', # <-- ¡AÑADE ESTA LÍNEA!
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -128,7 +128,7 @@ from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1), # Tiempo de vida del token de acceso
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),   # Tiempo de vida del token de refresco
-    'ROTATE_REFRESH_TOKENS': False,
+    'ROTATE_REFRESH_TOKENS': True, # Si se deben rotar los tokens de refresco
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
 
