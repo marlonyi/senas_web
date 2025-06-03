@@ -1,7 +1,8 @@
 # cursos/models.py
 from django.db import models
-from django.contrib.auth.models import User
-from django.utils.text import slugify # ¡IMPORTANTE: Asegúrate de que esta línea esté aquí!
+from django.conf import settings # ¡CAMBIO: Importar settings aquí!
+from django.utils.text import slugify
+from django.utils import timezone # ¡NUEVO: Importar timezone para el método save!
 
 
 class Curso(models.Model):
@@ -78,7 +79,7 @@ class Actividad(models.Model):
 
 class ProgresoCurso(models.Model):
     id_progreso_curso = models.AutoField(primary_key=True)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE) # ¡CAMBIO AQUÍ!
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE)
     completado = models.BooleanField(default=False)
     fecha_inicio = models.DateTimeField(auto_now_add=True)
@@ -93,7 +94,7 @@ class ProgresoCurso(models.Model):
 
 class ProgresoModulo(models.Model):
     id_progreso_modulo = models.AutoField(primary_key=True)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE) # ¡CAMBIO AQUÍ!
     modulo = models.ForeignKey(Modulo, on_delete=models.CASCADE)
     completado = models.BooleanField(default=False)
     fecha_inicio = models.DateTimeField(auto_now_add=True)
@@ -108,7 +109,7 @@ class ProgresoModulo(models.Model):
 
 class ProgresoLeccion(models.Model):
     id_progreso_leccion = models.AutoField(primary_key=True)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE) # ¡CAMBIO AQUÍ!
     leccion = models.ForeignKey(Leccion, on_delete=models.CASCADE)
     completado = models.BooleanField(default=False)
     fecha_inicio = models.DateTimeField(auto_now_add=True)
@@ -123,7 +124,7 @@ class ProgresoLeccion(models.Model):
 
 class ProgresoActividad(models.Model):
     id_progreso_actividad = models.AutoField(primary_key=True)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE) # ¡CAMBIO AQUÍ!
     actividad = models.ForeignKey(Actividad, on_delete=models.CASCADE)
     puntuacion = models.IntegerField(blank=True, null=True)
     intentos = models.IntegerField(default=0)
@@ -135,6 +136,13 @@ class ProgresoActividad(models.Model):
 
     class Meta:
         unique_together = ('usuario', 'actividad') # Un solo registro por usuario/actividad
+
+    # ¡NUEVO: Método save para gestionar fecha_completado aquí!
+    def save(self, *args, **kwargs):
+        # Si se marca como completado y no tenía fecha de completado
+        if self.completado and not self.fecha_completado:
+            self.fecha_completado = timezone.now()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Progreso de {self.usuario.username} en Actividad: {self.actividad.pregunta[:20]}... - Puntos: {self.puntuacion}"
@@ -153,7 +161,8 @@ class CategoriaCurso(models.Model):
 
     def save(self, *args, **kwargs):
         # Generar el slug automáticamente si no se ha proporcionado o si el nombre cambia
-        if not self.slug or (self.pk and not self.slug):
+        # Esta lógica es crucial para que no pida el slug en la API.
+        if not self.slug:
             self.slug = slugify(self.nombre)
         super().save(*args, **kwargs)
 

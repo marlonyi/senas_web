@@ -21,14 +21,7 @@ from django.db import IntegrityError
 class CategoriaCursoViewSet(viewsets.ModelViewSet):
     queryset = CategoriaCurso.objects.all().order_by('nombre')
     serializer_class = CategoriaCursoSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly] # Permite lectura a todos, escritura solo a autenticados
-    # Si quieres que solo los administradores puedan crear/editar categorías:
-    # def get_permissions(self):
-    #     if self.action in ['create', 'update', 'partial_update', 'destroy']:
-    #         self.permission_classes = [permissions.IsAdminUser]
-    #     else:
-    #         self.permission_classes = [permissions.AllowAny] # O IsAuthenticated
-    #     return super().get_permissions()
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] # ¡OPCIONAL: Puedes cambiarlo según tu decisión, pero lo dejo como estaba!
 
 
 class CursoViewSet(viewsets.ModelViewSet):
@@ -89,7 +82,7 @@ class LeccionViewSet(viewsets.ModelViewSet):
             defaults={
                 'completado': True,
                 'fecha_inicio': timezone.now(),
-                'fecha_completado': timezone.now()
+                'fecha_completado': timezone.now() # Esto se establece aquí si se crea por primera vez
             }
         )
 
@@ -98,7 +91,7 @@ class LeccionViewSet(viewsets.ModelViewSet):
                 return Response({'detail': 'Lección ya marcada como completada.'}, status=status.HTTP_200_OK)
 
             progreso_leccion.completado = True
-            progreso_leccion.fecha_completado = timezone.now()
+            progreso_leccion.fecha_completado = timezone.now() # Y también si se actualiza a completada
             progreso_leccion.save()
         serializer = ProgresoLeccionSerializer(progreso_leccion)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -185,11 +178,11 @@ class ActividadViewSet(viewsets.ModelViewSet):
         progreso_actividad.puntuacion = puntuacion_obtenida
         progreso_actividad.completado = completado
         
-        # Solo actualiza fecha_completado si se marcó como completado y no tenía fecha_completado antes
-        if completado and not progreso_actividad.fecha_completado:
-            progreso_actividad.fecha_completado = timezone.now()
+        # Eliminamos la lógica de fecha_completado de aquí, ahora está en el modelo ProgresoActividad.save()
+        # if completado and not progreso_actividad.fecha_completado:
+        #     progreso_actividad.fecha_completado = timezone.now()
 
-        progreso_actividad.save()
+        progreso_actividad.save() # Llama al método save del modelo, que ahora maneja fecha_completado
 
         serializer = ProgresoActividadSerializer(progreso_actividad)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -298,15 +291,8 @@ class ProgresoActividadViewSet(viewsets.ModelViewSet):
             serializer.save(usuario=self.request.user)
 
     def perform_update(self, serializer):
-        original_completado = serializer.instance.completado
-        
+        # Ya no necesitamos la lógica de fecha_completado aquí, está en el método save del modelo.
         serializer.save() # Guarda los campos que vienen en la petición
-
-        # Lógica para actualizar fecha_completado si la actividad se marca como completada
-        # y no lo estaba antes, y no tenía fecha de completado.
-        if not original_completado and serializer.instance.completado and not serializer.instance.fecha_completado:
-            serializer.instance.fecha_completado = timezone.now()
-            serializer.instance.save(update_fields=['fecha_completado'])
 
         if not self.request.user.is_staff and serializer.instance.usuario != self.request.user:
             raise permissions.PermissionDenied("No tienes permiso para actualizar el progreso de otro usuario.")

@@ -74,19 +74,8 @@ def gestionar_niveles_e_insignias_por_puntos(usuario, puntos_usuario_instance):
     """
     # 1. Asignar Nivel
     old_level = puntos_usuario_instance.nivel_actual
-    # Llama al método del modelo para actualizar el nivel en la instancia
-    level_changed = puntos_usuario_instance.update_nivel_based_on_points()
-
-    if level_changed:
+    if level_changed := puntos_usuario_instance.update_nivel_based_on_points():
         logger.debug(f'DEBUG: Nivel de {usuario.username} actualizado a {puntos_usuario_instance.nivel_actual.nombre}')
-        # Aquí es crucial: si el nivel cambió, guarda la instancia para persistir el nuevo nivel.
-        # Esto es necesario porque `update_nivel_based_on_points` solo actualiza el atributo en memoria.
-        # El save() aquí dispararía otra vez la señal post_save de PuntosUsuario.
-        # Para evitar recursión infinita, usaremos un patrón donde la señal principal
-        # de post_save de PuntosUsuario maneja el guardado final si el nivel cambió.
-        # Por ahora, simplemente actualizamos la instancia y la señal post_save de PuntosUsuario
-        # (puntos_usuario_post_save) se encargará de cualquier save necesario.
-
     # 2. Otorgar Insignias por Puntos
     insignias_por_puntos = Insignia.objects.filter(
         tipo_desbloqueo=Insignia.TIPO_PUNTOS,
@@ -129,7 +118,7 @@ def gestionar_insignias_complejas(usuario):
         otorgar_insignia(usuario, INSIGNIA_TODO_BASICO)
         print(f"DEBUG: Insignia '{INSIGNIA_TODO_BASICO}' otorgada a {usuario.username}.")
     else:
-        print(f"DEBUG_DOMINADOR: Condición para Dominador Básico NO cumplida. ")
+        print("DEBUG_DOMINADOR: Condición para Dominador Básico NO cumplida. ")
         print(f"DEBUG_DOMINADOR: IDs Totales: {cursos_basicos_ids}, IDs Completados: {cursos_basicos_completados_ids}")
 
 

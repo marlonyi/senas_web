@@ -131,10 +131,10 @@ class MiPerfilSerializer(serializers.ModelSerializer):
         # 2. Actualizar PreferenciasAccesibilidad (delegando al serializador anidado)
         if 'preferencias_accesibilidad' in validated_data:
             preferencias_data = validated_data.pop('preferencias_accesibilidad')
-            
-            preferencias_obj = getattr(user, 'preferencias_accesibilidad', None)
 
-            if preferencias_obj:
+            if preferencias_obj := getattr(
+                user, 'preferencias_accesibilidad', None
+            ):
                 # Actualizar la instancia existente de PreferenciasAccesibilidad
                 # Usamos el serializador anidado para manejar la validación y actualización.
                 # self.fields['preferencias_accesibilidad'] es la instancia del serializador anidado.
@@ -151,7 +151,7 @@ class MiPerfilSerializer(serializers.ModelSerializer):
             'fecha_nacimiento', 'telefono', 'biografia', 'genero',
             'pais', 'ciudad', 'idioma_preferido', 'nivel_educativo', 'ocupacion'
         ]
-        
+
         perfil_data_to_update = {
             k: v for k, v in validated_data.items() if k in perfil_direct_fields
         }
