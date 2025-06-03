@@ -1,9 +1,7 @@
 # gamificacion/models.py
 from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone # Solo necesitas timezone para default=timezone.now en InsigniaUsuario
-
-# No necesitas logger, post_save, receiver aquí. Se manejarán en signals.py
+from django.conf import settings # ¡CAMBIO: Usar settings para AUTH_USER_MODEL!
+from django.utils import timezone
 
 class Nivel(models.Model):
     nombre = models.CharField(max_length=50, unique=True)
@@ -21,11 +19,12 @@ class Nivel(models.Model):
 
 class PuntosUsuario(models.Model):
     usuario = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='puntos_gamificacion'
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='puntos_gamificacion' # ¡CAMBIO AQUÍ!
     )
     puntos = models.IntegerField(default=0)
     fecha_ultima_actualizacion = models.DateTimeField(auto_now=True)
     # Renombramos a 'last_daily_login_award' para mayor claridad y coherencia con el signals.py
+    # ¡IMPORTANTE! Asegúrate de que este nombre sea 'last_daily_login_award'
     last_daily_login_award = models.DateField(null=True, blank=True)
     login_streak = models.IntegerField(default=0)
 
@@ -93,7 +92,7 @@ class Insignia(models.Model):
 
 class InsigniaUsuario(models.Model):
     usuario = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='insignias_obtenidas'
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='insignias_obtenidas' # ¡CAMBIO AQUÍ!
     )
     insignia = models.ForeignKey(
         Insignia, on_delete=models.CASCADE, related_name='usuarios_con_insignia'

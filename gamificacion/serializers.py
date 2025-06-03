@@ -1,6 +1,13 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model # ¡CAMBIO: Usar get_user_model!
 from .models import PuntosUsuario, Insignia, InsigniaUsuario, Nivel # Asegúrate de importar Nivel también
+
+User = get_user_model() # ¡NUEVO: Obtener el modelo de usuario!
+
+class NivelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Nivel
+        fields = '__all__' # Incluye todos los campos del modelo Nivel
 
 class PuntosUsuarioSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='usuario.username', read_only=True)
@@ -10,16 +17,16 @@ class PuntosUsuarioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PuntosUsuario
-        fields = ['id', 'username', 'puntos', 'fecha_ultima_actualizacion', 'nivel_nombre', 'nivel_descripcion']
+        fields = ['id', 'username', 'puntos', 'fecha_ultima_actualizacion', 'nivel_nombre', 'nivel_descripcion', 'last_daily_login_award', 'login_streak']
         # Quita 'puntos' de read_only_fields si quieres modificarlo con PATCH para la prueba.
         # En un sistema real, 'puntos' se actualizaría por lógica de negocio, no directamente por la API.
-        read_only_fields = ['usuario', 'fecha_ultima_actualizacion', 'nivel_nombre', 'nivel_descripcion']
+        read_only_fields = ['usuario', 'fecha_ultima_actualizacion', 'nivel_nombre', 'nivel_descripcion', 'last_daily_login_award', 'login_streak']
 
 
 class InsigniaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Insignia
-        fields = ['id', 'nombre', 'descripcion', 'imagen', 'puntos_requeridos']
+        fields = ['id', 'nombre', 'descripcion', 'imagen', 'puntos_requeridos', 'tipo_desbloqueo']
 
 class InsigniaUsuarioSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='usuario.username', read_only=True)
@@ -34,7 +41,8 @@ class InsigniaUsuarioSerializer(serializers.ModelSerializer):
         
 class LeaderboardUserSerializer(serializers.ModelSerializer):
     puntos_totales = serializers.IntegerField(source='puntos_gamificacion.puntos', read_only=True)
+    nivel_nombre = serializers.CharField(source='puntos_gamificacion.nivel_actual.nombre', read_only=True, allow_null=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'puntos_totales']
+        fields = ['id', 'username', 'first_name', 'last_name', 'puntos_totales', 'nivel_nombre']

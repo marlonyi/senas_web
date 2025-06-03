@@ -1,15 +1,15 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PuntosUsuarioViewSet, InsigniaViewSet, InsigniaUsuarioViewSet, LeaderboardView
+from .views import PuntosUsuarioViewSet, InsigniaViewSet, InsigniaUsuarioViewSet, LeaderboardView, NivelViewSet
 
 # Inicializa el router
 router = DefaultRouter()
 
 # Registra tus ViewSets con sus respectivos prefijos de URL
-# CORRECCIÓN: El router no necesita regex para el prefijo, solo la cadena literal.
 router.register('puntos-usuario', PuntosUsuarioViewSet, basename='puntos-usuario')
 router.register('insignias', InsigniaViewSet, basename='insignia')
 router.register('insignias-usuario', InsigniaUsuarioViewSet, basename='insignias-usuario')
+router.register('niveles', NivelViewSet, basename='nivel')
 
 # Define los patrones de URL
 urlpatterns = [
