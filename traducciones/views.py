@@ -2,10 +2,16 @@
 from rest_framework import viewsets, permissions
 from .models import CategoriaSenda, Senda
 from .serializers import CategoriaSendaSerializer, SendaSerializer
+from django_filters.rest_framework import DjangoFilterBackend # ¡Añade esta importación!
+from rest_framework import filters # ¡Añade esta importación!
 
 class CategoriaSendaViewSet(viewsets.ModelViewSet):
     queryset = CategoriaSenda.objects.all()
     serializer_class = CategoriaSendaSerializer
+    
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['activo'] # Puedes filtrar por si está activa o no
+    search_fields = ['nombre', 'descripcion'] 
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
@@ -19,6 +25,10 @@ class CategoriaSendaViewSet(viewsets.ModelViewSet):
 class SendaViewSet(viewsets.ModelViewSet):
     queryset = Senda.objects.all()
     serializer_class = SendaSerializer
+    
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['activo', 'categoria'] # Filtrar por si está activa o por ID de categoría
+    search_fields = ['titulo', 'contenido']
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
