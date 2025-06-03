@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/traducciones/', include('traducciones.urls')),
     path('api/comunidad/', include('comunidad.urls')),
     path('api/gamificacion/', include('gamificacion.urls')),
+    path('api/accesibilidad/', include('accesibilidad.urls')),
 
     # Rutas de autenticación JWT (las mantienes aquí en la raíz de 'api/')
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

@@ -1,9 +1,10 @@
 # usuarios/models.py
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings # ¡CAMBIO: Importar settings aquí!
 
 class PerfilUsuario(models.Model):
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='mi_perfil')
+    # ¡CAMBIO: Usar settings.AUTH_USER_MODEL!
+    usuario = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mi_perfil')
 
     # Campos esenciales / muy recomendados para el perfil (los que ya tenías)
     fecha_nacimiento = models.DateField(null=True, blank=True)
@@ -56,7 +57,12 @@ class PerfilUsuario(models.Model):
 # El modelo PreferenciasAccesibilidad ya lo tienes y está bien
 # Solo asegúrate de que los campos 'tamano_fuente' y 'contraste_alto' estén definidos allí.
 class PreferenciasAccesibilidad(models.Model):
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferencias_accesibilidad')
+    # ¡CAMBIO: Usar settings.AUTH_USER_MODEL y añadir related_name único!
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='preferencias_accesibilidad_usuario_app' # ¡CAMBIO CRÍTICO AQUÍ!
+    )
     transcripciones_activas = models.BooleanField(default=True)
     tamano_fuente = models.CharField(
         max_length=50,
