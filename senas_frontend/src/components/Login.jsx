@@ -1,50 +1,44 @@
 // src/components/Login.jsx
+
 import React, { useState } from 'react';
 
 export default function Login({ DJANGO_API_BASE_URL, onLoginSuccess, setErrorMessage, setCurrentPage }) {
-    const [email, setEmail] = useState('');
+    // CAMBIO CLAVE: Usar 'username' en lugar de 'email' para el campo de login
+    const [username, setUsername] = useState(''); 
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false); // Estado para mostrar indicador de carga
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
-        e.preventDefault(); // Previene el comportamiento por defecto del formulario (recargar la página)
-        setLoading(true); // Activar el estado de carga
-        setErrorMessage(''); // Limpiar cualquier mensaje de error previo
+        e.preventDefault(); 
+        setLoading(true); 
+        setErrorMessage(''); 
 
         try {
-            // Realiza la petición POST a tu endpoint de login de Django
             const response = await fetch(`${DJANGO_API_BASE_URL}/api/token/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }), // Envía email y contraseña
+                // CAMBIO CLAVE: Enviar 'username' en lugar de 'email'
+                body: JSON.stringify({ username, password }), 
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                // Si la respuesta es exitosa (código 200), extrae los tokens
                 const accessToken = data.access;
                 const refreshToken = data.refresh;
-                
-                // Llama a la función de éxito que se pasa desde App.jsx
-                // Esta función se encargará de guardar los tokens y obtener el perfil de usuario
                 onLoginSuccess(accessToken, refreshToken);
-                // No se necesita setCurrentPage aquí ya que onLoginSuccess lo maneja al obtener el perfil
             } else {
-                // Si la respuesta no es exitosa, muestra el mensaje de error del backend
-                // Los errores pueden estar en data.detail o en otros campos específicos de validación
-                const errorMsg = data.detail || (data.email && data.email[0]) || (data.password && data.password[0]) || 'Error desconocido al iniciar sesión.';
+                const errorMsg = data.detail || (data.username && data.username[0]) || (data.password && data.password[0]) || 'Error desconocido al iniciar sesión.';
                 setErrorMessage(`Error de inicio de sesión: ${errorMsg}`);
                 console.error('Error de Django en Login:', data);
             }
         } catch (error) {
-            // Errores de red o de conexión
             console.error('Error de red al intentar iniciar sesión:', error);
             setErrorMessage('Error de red. Asegúrate de que el backend de Django esté funcionando y accesible.');
         } finally {
-            setLoading(false); // Desactivar el estado de carga
+            setLoading(false); 
         }
     };
 
@@ -54,16 +48,16 @@ export default function Login({ DJANGO_API_BASE_URL, onLoginSuccess, setErrorMes
                 <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Iniciar Sesión</h2>
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                            Correo Electrónico
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                            Nombre de Usuario
                         </label>
                         <input
-                            type="email"
-                            id="email"
+                            type="text" // Cambiado a 'text' para username
+                            id="username"
                             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                            placeholder="tu@ejemplo.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="tu_nombre_de_usuario" // Placeholder ajustado
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                             required
                         />
                     </div>
@@ -84,7 +78,7 @@ export default function Login({ DJANGO_API_BASE_URL, onLoginSuccess, setErrorMes
                     <button
                         type="submit"
                         className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out flex items-center justify-center"
-                        disabled={loading} // Deshabilita el botón mientras se carga
+                        disabled={loading} 
                     >
                         {loading ? (
                             <svg className="animate-spin h-5 w-5 text-white mr-3" viewBox="0 0 24 24">

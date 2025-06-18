@@ -1,158 +1,193 @@
-// src/components/Register.jsx
+// senas_frontend/src/components/Register.jsx
+
 import React, { useState } from 'react';
 
-export default function Register({ DJANGO_API_BASE_URL, setCurrentPage, setErrorMessage }) {
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [loading, setLoading] = useState(false); // Estado para mostrar indicador de carga
+function Register({ setRenderPage }) { // Asegúrate de que setRenderPage se recibe como prop
+    // Estado para almacenar los datos del formulario de registro
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        password2: '', // Confirmación de contraseña
+        first_name: '',
+        last_name: ''
+    });
 
+    // Estado para manejar mensajes de error o éxito
+    const [message, setMessage] = useState('');
+    // Estado para controlar el estado de carga (mientras se envía la solicitud)
+    const [loading, setLoading] = useState(false);
+
+    // URL base de tu API de Django
+    // ASEGÚRATE DE QUE ESTA URL ES CORRECTA PARA TU BACKEND
+    const DJANGO_API_BASE_URL = "http://127.0.0.1:8000";
+
+    // Maneja los cambios en los campos del formulario
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // Maneja el envío del formulario de registro
     const handleRegister = async (e) => {
-        e.preventDefault(); // Previene el comportamiento por defecto del formulario
-        setLoading(true); // Activar el estado de carga
-        setErrorMessage(''); // Limpiar cualquier mensaje de error previo
+        // MUY IMPORTANTE: Asegúrate de que esta línea es la primera en la función
+        // para prevenir el envío por defecto del formulario.
+        e.preventDefault(); 
+        console.log("¡e.preventDefault() llamado!"); // Añade este log para confirmar que se ejecuta.
 
-        if (password !== confirmPassword) {
-            setErrorMessage('Las contraseñas no coinciden. Por favor, inténtalo de nuevo.');
+        setMessage(''); // Limpia mensajes anteriores
+        setLoading(true); // Activa el estado de carga
+
+        // Validaciones básicas del lado del cliente
+        if (formData.password !== formData.password2) {
+            setMessage('Las contraseñas no coinciden.');
             setLoading(false);
             return;
         }
 
+        // Prepara los datos para enviar al backend
+        const userData = {
+            username: formData.username,
+            email: formData.email,
+            password: formData.password,
+            // Asegúrate de que tu serializador de Django espera 'password2'
+            password2: formData.password2, // Asegúrate de enviar password2 aquí
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+        };
+
+        console.log("Enviando datos al backend:", JSON.stringify(userData, null, 2));
+
         try {
-            // Realiza la petición POST a tu endpoint de registro de Django
+            // VERIFICA ESTA LÍNEA CUIDADOSAMENTE POR CUALQUIER ERROR DE SINTAXIS
             const response = await fetch(`${DJANGO_API_BASE_URL}/api/usuarios/register/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
-                    username: username, // Asegúrate de que Django espera 'username'
-                    email: email, 
-                    password: password,
-                    // Si tu backend de registro requiere confirm_password, añádelo aquí
-                    // confirm_password: confirmPassword,
-                }),
+                body: JSON.stringify(userData), // Convierte el objeto JavaScript a una cadena JSON
             });
 
-            const data = await response.json();
-
             if (response.ok) {
-                // Si el registro es exitoso, puedes redirigir al usuario al login
-                setErrorMessage('Registro exitoso. ¡Ahora puedes iniciar sesión!');
-                setCurrentPage('login'); // Redirigir a la página de login
+                const data = await response.json();
+                console.log("Registro exitoso:", data);
+                setMessage('Registro exitoso. ¡Ahora puedes iniciar sesión!');
+                // Mueve setRenderPage AQUÍ, después de que la respuesta sea OK
+                setRenderPage('login'); 
             } else {
-                // Si hay errores, muestra los mensajes del backend
-                // Los errores pueden venir en diferentes formatos, se intenta capturar los más comunes
-                let errorDetails = 'Error desconocido al registrar. Revisa los datos.';
-                if (data.email) {
-                    errorDetails = `Email: ${data.email[0]}`;
-                } else if (data.username) {
-                    errorDetails = `Nombre de usuario: ${data.username[0]}`;
-                } else if (data.password) {
-                    errorDetails = `Contraseña: ${data.password[0]}`;
-                } else if (data.detail) {
-                    errorDetails = data.detail;
-                }
-                setErrorMessage(`Error de registro: ${errorDetails}`);
-                console.error('Error de Django en Register:', data);
+                const errorData = await response.json();
+                console.error("Error en el registro:", errorData);
+                // Muestra un mensaje de error más específico del backend si está disponible
+                setMessage(`Error al registrarse: ${errorData.detail || JSON.stringify(errorData)}`);
             }
         } catch (error) {
-            // Errores de red o de conexión
-            console.error('Error de red al intentar registrar:', error);
-            setErrorMessage('Error de red. Asegúrate de que el backend de Django esté funcionando y accesible.');
+            console.error("Error de red al intentar registrarse:", error);
+            setMessage(`Error al registrarse: Falló la conexión al servidor. (${error.message})`);
         } finally {
-            setLoading(false); // Desactivar el estado de carga
+            setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-            <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Registrarse</h2>
-                <form onSubmit={handleRegister} className="space-y-6">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+            <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+                <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Registro</h2>
+                {/* VERIFICA EL onSUBMIT DE ESTE FORMULARIO */}
+                <form onSubmit={handleRegister} className="space-y-4"> 
                     <div>
-                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                            Nombre de Usuario
-                        </label>
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-700">Usuario</label>
                         <input
                             type="text"
                             id="username"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                            placeholder="tu_nombre_de_usuario"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
                             required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                     </div>
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                            Correo Electrónico
-                        </label>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
                         <input
                             type="email"
                             id="email"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                            placeholder="tu@ejemplo.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
                             required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                     </div>
                     <div>
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                            Contraseña
-                        </label>
+                        <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">Nombre</label>
+                        <input
+                            type="text"
+                            id="first_name"
+                            name="first_name"
+                            value={formData.first_name}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">Apellido</label>
+                        <input
+                            type="text"
+                            id="last_name"
+                            name="last_name"
+                            value={formData.last_name}
+                            onChange={handleChange}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">Contraseña</label>
                         <input
                             type="password"
                             id="password"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
                             required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                     </div>
                     <div>
-                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                            Confirmar Contraseña
-                        </label>
+                        <label htmlFor="password2" className="block text-sm font-medium text-gray-700">Confirmar Contraseña</label>
                         <input
                             type="password"
-                            id="confirmPassword"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                            placeholder="••••••••"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            id="password2"
+                            name="password2"
+                            value={formData.password2}
+                            onChange={handleChange}
                             required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                     </div>
                     <button
                         type="submit"
-                        className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out flex items-center justify-center"
-                        disabled={loading}
+                        disabled={loading} // Deshabilita el botón mientras se carga
+                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                     >
-                        {loading ? (
-                            <svg className="animate-spin h-5 w-5 text-white mr-3" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        ) : null}
                         {loading ? 'Registrando...' : 'Registrarse'}
                     </button>
                 </form>
-                <div className="mt-6 text-center">
-                    <p className="text-sm text-gray-600">
-                        ¿Ya tienes una cuenta?{' '}
-                        <button
-                            onClick={() => setCurrentPage('login')}
-                            className="text-blue-600 hover:text-blue-800 font-medium transition duration-150 ease-in-out"
-                        >
-                            Inicia Sesión aquí
-                        </button>
+                {message && (
+                    <p className={`mt-4 text-center ${message.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                        {message}
                     </p>
-                </div>
+                )}
+                <p className="mt-4 text-center text-sm text-gray-600">
+                    ¿Ya tienes una cuenta?{' '}
+                    <span
+                        onClick={() => setRenderPage('login')}
+                        className="font-medium text-blue-600 hover:text-blue-500 cursor-pointer"
+                    >
+                        Inicia Sesión aquí
+                    </span>
+                </p>
             </div>
         </div>
     );
 }
+
+export default Register;

@@ -4,14 +4,14 @@ import React, { useState, useEffect } from 'react';
 // Importa íconos si los necesitas, por ejemplo:
 // import { ArrowLeft, Book } from 'lucide-react';
 
-export default function Courses({ setCurrentPage, DJANGO_API_BASE_URL, token, setErrorMessage }) {
+export default function Courses({ setCurrentPage, DJANGO_API_BASE_URL, authToken, userId, setErrorMessage }) {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchCourses = async () => {
-            if (!token) {
+            if (!authToken) {
                 setErrorMessage('No autorizado. Por favor, inicia sesión de nuevo.');
                 setCurrentPage('login');
                 setLoading(false);
@@ -19,11 +19,12 @@ export default function Courses({ setCurrentPage, DJANGO_API_BASE_URL, token, se
             }
 
             try {
+                // Endpoint para obtener cursos (ajusta la URL según tu backend de Django)
                 const response = await fetch(`${DJANGO_API_BASE_URL}/api/cursos/`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Token ${token}`, // Envía el token de autenticación
+                        'Authorization': `Bearer ${authToken}`, // Usa Bearer token para JWT
                     },
                 });
 
@@ -46,7 +47,7 @@ export default function Courses({ setCurrentPage, DJANGO_API_BASE_URL, token, se
         };
 
         fetchCourses();
-    }, [DJANGO_API_BASE_URL, token, setCurrentPage, setErrorMessage]); // Dependencias del useEffect
+    }, [DJANGO_API_BASE_URL, authToken, setCurrentPage, setErrorMessage]); // Dependencias del useEffect
 
     return (
         <div className="flex flex-col items-center min-h-screen bg-gradient-to-br from-green-50 to-blue-100 p-4">
@@ -57,7 +58,7 @@ export default function Courses({ setCurrentPage, DJANGO_API_BASE_URL, token, se
                         onClick={() => setCurrentPage('home')}
                         className="flex items-center bg-gray-200 text-gray-800 py-2 px-5 rounded-lg shadow-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 text-lg font-semibold transition duration-300 ease-in-out transform hover:scale-105"
                     >
-                        {/* <ArrowLeft className="mr-2 h-5 w-5" /> // Ejemplo de icono */}
+                        {/* <ArrowLeft className="mr-2 h-5 w-5" /> */}
                         Volver al Inicio
                     </button>
                 </div>
@@ -85,13 +86,13 @@ export default function Courses({ setCurrentPage, DJANGO_API_BASE_URL, token, se
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {courses.map(course => (
                         <div key={course.id} className="bg-white border border-gray-200 rounded-xl shadow-lg p-6 flex flex-col items-start hover:shadow-xl transition-shadow duration-300 ease-in-out transform hover:-translate-y-1">
-                            {/* <Book className="text-blue-500 mb-4 h-10 w-10" /> // Ejemplo de icono */}
+                            {/* <Book className="text-blue-500 mb-4 h-10 w-10" /> */}
                             <h3 className="text-2xl font-bold text-gray-900 mb-2">{course.nombre}</h3>
                             <p className="text-gray-700 text-base mb-4 flex-grow">{course.descripcion}</p>
                             <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">{course.categoria}</span>
                             <div className="mt-4 w-full flex justify-end">
                                 <button
-                                    onClick={() => alert(`Inscribirse en: ${course.nombre}`)} // Esto debería ser una función para inscribirse
+                                    onClick={() => alert(`Inscribirse en: ${course.nombre}`)}
                                     className="bg-blue-600 text-white py-2 px-5 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-md font-bold transition duration-300 ease-in-out"
                                 >
                                     Ver Detalles
