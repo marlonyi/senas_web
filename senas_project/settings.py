@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from corsheaders.defaults import default_headers, default_methods
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,6 +28,24 @@ SECRET_KEY = 'django-insecure-)c178*b$ec!h&#(h=629yk2tqb!7@yd*2q4_$i*$t)xm!2jh^0
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+# =====================
+# CONFIGURACIÓN DE CORS
+# =====================
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # React en modo desarrollo (vite)
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "Content-Type",
+    "Authorization",
+]
+
+CORS_ALLOW_METHODS = list(default_methods)
+
 
 
 # Application definition

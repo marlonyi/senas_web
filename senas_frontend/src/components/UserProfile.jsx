@@ -35,9 +35,9 @@ export default function UserProfile({ userProfile, onLogout, makeAuthenticatedRe
         try {
             console.log('Intentando subir nuevo avatar...');
             const response = await makeAuthenticatedRequest(
-                `${DJANGO_API_BASE_URL}/api/usuarios/profile/update_avatar/`,
+                `${DJANGO_API_BASE_URL}/api/usuarios/mi-perfil/avatar/`,
                 {
-                    method: 'POST',
+                    method: 'PUT', 
                     body: formData,
                     // No Content-Type header needed for FormData; browser sets it automatically
                 }
